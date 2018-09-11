@@ -1,7 +1,8 @@
 document.addEventListener("DOMContentLoaded", function(event) {
   document.getElementById('signin-button').addEventListener('click', function(event) {
     event.preventDefault()
-    blockstack.redirectToSignIn()
+    const origin = window.location.origin
+    blockstack.redirectToSignIn(origin, origin + '/manifest.json', ['store_write', 'publish_data'])
   })
 
   document.getElementById('signout-button').addEventListener('click', function(event) {
@@ -12,14 +13,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
   document.getElementById('getFile').addEventListener('click', function(event){
     event.preventDefault()
     var filename = document.getElementById('filename').value
+    var username = document.getElementById('username').value
     document.getElementById('content').value = ''
-    blockstack.getFile(filename, {decrypt : false})
+    blockstack.getFile(filename, {decrypt :false, username : username})
       .then(
         function(file){
           document.getElementById('content').value = file
         },
-        function(file){
-          console.log('getfile failed for %s', filename);
+        function(e){
+          console.log(`${username}: ${filename}`);
+          console.log('getfile failed for %s', e);
         }
       )
   })
@@ -28,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     event.preventDefault()
     var filename = document.getElementById('filename').value
     var blob = document.getElementById('content').value
-    blockstack.putFile(filename, blob,{decrypt : false})
+    blockstack.putFile(filename, blob, {encrypt : false})
       .then(
         function(){
           console.log('put file suggess for %s', filename);
@@ -42,20 +45,16 @@ document.addEventListener("DOMContentLoaded", function(event) {
   })
 
 
-  function showProfile(profile) {
-    var person = new blockstack.Person(profile)
-    document.getElementById('heading-name').innerHTML = person.name() ? person.name() : "Nameless Person"
-    if(person.avatarUrl()) {
-      document.getElementById('avatar-image').setAttribute('src', person.avatarUrl())
-    }
-    document.getElementById('section-1').style.display = 'none'
-    document.getElementById('section-2').style.display = 'block'
+  function showUsername(username) {
+    document.getElementById('heading-name').innerHTML = username ? username : "undefined user"
+    document.getElementById('section-1').style.visibility = 'hidden' 
+    document.getElementById('section-2').style.visibility = 'visible'
   }
 
   if (blockstack.isUserSignedIn()) {
-    var profile = blockstack.loadUserData().profile
-      showProfile(profile)
-      console.log("ud: %o", blockstack.loadUserData());
+    var username = blockstack.loadUserData().username
+    console.log(blockstack.loadUserData())
+    showUsername(username)
   } else if (blockstack.isSignInPending()) {
     blockstack.handlePendingSignIn().then(function(userData) {
       window.location = window.location.origin
